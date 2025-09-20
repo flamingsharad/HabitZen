@@ -10,6 +10,8 @@ import { useEffect, useState } from "react";
 import { Habit } from "@/lib/types";
 import { Loader2, Milestone } from "lucide-react";
 import { ProgressTimeline } from "@/components/progress/progress-timeline";
+import { ExportData } from "@/components/progress/export-data";
+import { ProgressSkeleton } from "@/components/layout/progress-skeleton";
 
 export default function ProgressPage() {
     const [habits, setHabits] = useState<Habit[]>([]);
@@ -33,15 +35,11 @@ export default function ProgressPage() {
     const longestStreak = Math.max(...habits.map(h => h.streak), 0);
 
     if (loading) {
-        return (
-            <div className="flex justify-center items-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
+        return <ProgressSkeleton />;
     }
 
     return (
-        <div className="grid auto-rows-max items-start gap-4 md:gap-8">
+        <div className="flex flex-col gap-4 md:gap-8">
             <div className="grid gap-4 sm:grid-cols-2">
                  <Card>
                     <CardHeader className="pb-2">
@@ -77,8 +75,8 @@ export default function ProgressPage() {
                     <HabitHeatmap habits={habits} />
                 </CardContent>
             </Card>
-            <div className="grid gap-4 md:grid-cols-2">
-                <Card>
+            <div className="flex flex-wrap justify-center gap-4 md:gap-8">
+                <Card className="flex-1 min-w-[300px] w-full max-w-full lg:max-w-lg">
                     <CardHeader>
                         <CardTitle>Weekly Consistency</CardTitle>
                         <CardDescription>
@@ -89,7 +87,7 @@ export default function ProgressPage() {
                         <ConsistencyChart habits={habits} />
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="flex-1 min-w-[300px] w-full max-w-full lg:max-w-lg">
                     <CardHeader>
                         <CardTitle>Streaks Overview</CardTitle>
                         <CardDescription>
@@ -115,6 +113,7 @@ export default function ProgressPage() {
                     <ProgressTimeline habits={habits} />
                 </CardContent>
             </Card>
+            <ExportData />
         </div>
     );
 }

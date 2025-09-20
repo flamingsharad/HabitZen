@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Flame, Star, Zap, Crown, Shield, Loader2 } from "lucide-react";
 import { Habit } from "@/lib/types";
 import { useEffect, useState } from "react";
+import { AchievementsSkeleton } from "@/components/layout/achievements-skeleton";
 
 type Achievement = {
     id: string;
@@ -102,11 +103,7 @@ export default function AchievementsPage() {
     }, []);
 
     if (loading) {
-        return (
-            <div className="flex justify-center items-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
+        return <AchievementsSkeleton />;
     }
 
     return (

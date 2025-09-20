@@ -7,17 +7,17 @@ import { GoalRoadmapGenerator } from "@/components/profile/goal-roadmap-generato
 
 export default function ProfilePage() {
     return (
-        <div className="grid auto-rows-max items-start gap-4 md:gap-8">
-            <Card>
+        <div className="flex w-full flex-col items-start gap-4 md:gap-8">
+            <Card className="w-full">
                 <CardHeader>
                     <CardTitle>Profile</CardTitle>
-                    <CardDescription>Manage your personal information.</CardDescription>
+                    <CardDescription>Manage your personal information and notification settings.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <ProfileForm />
                 </CardContent>
             </Card>
-             <Card>
+             <Card className="w-full">
                 <CardHeader>
                     <CardTitle>Your Goals</CardTitle>
                     <CardDescription>Set your main objectives to tailor your habit journey.</CardDescription>
@@ -27,7 +27,7 @@ export default function ProfilePage() {
                 </CardContent>
             </Card>
             <GoalRoadmapGenerator />
-            <Card>
+            <Card className="w-full">
                 <CardHeader>
                     <CardTitle>Habit Management</CardTitle>
                     <CardDescription>Add, edit, or remove your habits.</CardDescription>

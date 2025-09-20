@@ -4,24 +4,36 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { getMessaging } from 'firebase/messaging';
+import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
   "projectId": "studio-8569249950-7e375",
   "appId": "1:524844859144:web:21a6d38e47f7d1340c76bd",
-  "storageBucket": "studio-8569249950-7e375.firebasestorage.app",
   "apiKey": "AIzaSyC5zDxYpABX5kLvbAN-EVGeWz9Y7YR5GUY",
   "authDomain": "studio-8569249950-7e375.firebaseapp.com",
-  "measurementId": "",
   "messagingSenderId": "524844859144"
 };
 
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+
+if (typeof window !== 'undefined') {
+  // Initialize App Check
+  initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!),
+    // Optional argument. Set to true to allow passing custom token to provider.
+    isTokenAutoRefreshEnabled: true
+  });
+}
+
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+// Initialize Firebase Cloud Messaging and get a reference to the service
+const messaging = (typeof window !== 'undefined' && firebaseConfig.messagingSenderId) ? getMessaging(app) : null;
+
 
 try {
   enableIndexedDbPersistence(db)
@@ -40,7 +52,7 @@ try {
 
 const googleProvider = new GoogleAuthProvider();
 
-export { app, auth, db, googleProvider };
+export { app, auth, db, googleProvider, messaging };
 
 // As a next step, you'll need to go to the Firebase console to enable authentication providers and set up Firestore security rules.
 

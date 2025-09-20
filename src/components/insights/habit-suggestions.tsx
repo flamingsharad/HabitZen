@@ -125,8 +125,8 @@ export function HabitSuggestions() {
   };
 
   const onHabitAdded = () => {
-    // Refresh the main dashboard page after a habit is added
-    router.push('/');
+    // This function is called when a habit is added.
+    // We don't need to do anything here anymore, as the toast is handled in the adder.
   }
 
   return (

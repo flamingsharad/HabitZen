@@ -12,6 +12,7 @@ import { AddHabitDialog } from "@/components/habits/add-habit-dialog";
 import { HabitItem } from "@/components/habits/habit-item";
 import { ShareProgressDialog } from "@/components/sharing/share-progress-dialog";
 import { MoodTracker } from "@/components/mood/mood-tracker";
+import { DashboardSkeleton } from "@/components/layout/dashboard-skeleton";
 
 export default function DashboardPage() {
   const [todaysHabits, setTodaysHabits] = useState<Habit[]>([]);
@@ -51,11 +52,7 @@ export default function DashboardPage() {
   const longestStreak = allHabits.length > 0 ? Math.max(0, ...allHabits.map(h => h.streak)) : 0;
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (

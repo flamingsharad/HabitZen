@@ -86,7 +86,9 @@ export function HabitItem({ habit: initialHabit, onStatusChange: onGlobalStatusC
         </div>
         {habit.frequency !== 'daily' && (
             <div className="flex items-center gap-2">
-                 <Progress value={habit.progress || 0} className="h-2 w-full" />
+                 <div className="flex-1">
+                    <Progress value={habit.progress || 0} className="h-2 w-full" />
+                 </div>
                  <span className="text-xs text-muted-foreground whitespace-nowrap">{Math.round(habit.progress || 0)}%</span>
             </div>
         )}

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/use-auth';
-import { Chrome } from 'lucide-react';
+import { Chrome, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -14,6 +14,7 @@ import Image from 'next/image';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { signInWithEmail, signInWithGoogle } = useAuth();
   const router = useRouter();
@@ -23,7 +24,7 @@ export default function LoginPage() {
     setError(null);
     try {
       await signInWithEmail(email, password);
-      router.push('/');
+      // The ProtectedRoute will handle the redirect
     } catch (err) {
       setError('Failed to sign in. Please check your credentials.');
     }
@@ -33,7 +34,7 @@ export default function LoginPage() {
     setError(null);
     try {
       await signInWithGoogle();
-      router.push('/');
+      // The ProtectedRoute will handle the redirect automatically on auth state change.
     } catch (err) {
       setError('Failed to sign in with Google.');
     }
@@ -71,13 +72,22 @@ export default function LoginPage() {
                   Forgot your password?
                 </Link>
               </div>
-              <Input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground"
+                >
+                  {showPassword ? <EyeOff /> : <Eye />}
+                </button>
+              </div>
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full">

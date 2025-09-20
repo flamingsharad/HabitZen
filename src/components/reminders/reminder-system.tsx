@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { getTodaysHabits } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Bell } from 'lucide-react';
@@ -10,9 +10,21 @@ import { useAuth } from '@/hooks/use-auth';
 export function ReminderSystem() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const [permission, setPermission] = useState('default');
 
   useEffect(() => {
-    if (!user) return;
+    // Check for notification support and permission on mount
+    if ('Notification' in window) {
+      setPermission(Notification.permission);
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().then(setPermission);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    // Only run the reminder logic if we have a user and permission is granted
+    if (!user || permission !== 'granted') return;
 
     const checkReminders = async () => {
       const now = new Date();
@@ -67,7 +79,7 @@ export function ReminderSystem() {
     checkReminders();
 
     return () => clearInterval(intervalId);
-  }, [toast, user]);
+  }, [toast, user, permission]);
 
   return null; // This component doesn't render anything visible
 }

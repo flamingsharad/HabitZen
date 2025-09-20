@@ -41,6 +41,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { PageLoader } from '../layout/page-loader';
 
 
 export function HabitManager() {
@@ -124,10 +125,9 @@ export function HabitManager() {
       </div>
       <div className="rounded-md border">
         {loading ? (
-            <div className="flex justify-center items-center h-48">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
+            <div className="h-48"><PageLoader /></div>
         ) : (
+          <div className="relative w-full overflow-auto">
             <Table>
             <TableHeader>
                 <TableRow>
@@ -141,11 +141,13 @@ export function HabitManager() {
             <TableBody>
                 {habits.map((habit) => (
                 <TableRow key={habit.id}>
-                    <TableCell className="font-medium">{habit.name}</TableCell>
-                    <TableCell><Badge variant="secondary">{habit.category}</Badge></TableCell>
-                    <TableCell className="capitalize">{habit.frequency}</TableCell>
+                    <TableCell className="font-medium whitespace-nowrap">{habit.name}</TableCell>
+                    <TableCell><Badge variant="secondary" className="whitespace-nowrap">{habit.category}</Badge></TableCell>
+                    <TableCell className="capitalize whitespace-nowrap">{habit.frequency}</TableCell>
                     <TableCell>
-                        {getReminderText(habit)}
+                        <div className="whitespace-nowrap">
+                          {getReminderText(habit)}
+                        </div>
                     </TableCell>
                     <TableCell>
                     <DropdownMenu>
@@ -167,6 +169,7 @@ export function HabitManager() {
                 ))}
             </TableBody>
             </Table>
+          </div>
         )}
       </div>
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>

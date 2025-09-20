@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { Logo } from '../icons/logo';
 import { SidebarNav } from './sidebar-nav';
 import { Header } from '../header';
-import { ReminderSystem } from '../reminders/reminder-system';
+import { LoadingScreen } from './loading-screen';
 
 const publicPaths = ['/login', '/signup', '/forgot-password'];
 
@@ -30,14 +30,13 @@ function AppLayout({ children }: { children: React.ReactNode }) {
           </SidebarContent>
           <SidebarRail />
         </Sidebar>
-        <SidebarInset>
+        <div className="flex flex-1 flex-col overflow-x-hidden">
           <Header />
-          <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+          <main className="flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
             {children}
           </main>
-        </SidebarInset>
+        </div>
       </div>
-      <ReminderSystem />
     </SidebarProvider>
   );
 }
@@ -64,11 +63,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   }, [user, loading, router, pathname, pathIsPublic]);
   
   if (loading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (pathIsPublic && !user) {
@@ -80,9 +75,5 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   }
 
   // Fallback loader while redirecting
-  return (
-    <div className="flex h-screen w-full items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-    </div>
-  );
+  return <LoadingScreen />;
 }

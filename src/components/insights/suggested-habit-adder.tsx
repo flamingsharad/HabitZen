@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, CheckCircle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -14,13 +14,21 @@ import {
 import { HabitForm } from '@/components/habits/habit-form';
 import { SuggestedHabit } from '@/ai/flows/receive-personalized-habit-suggestions';
 import { Habit } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
 
 
 export function SuggestedHabitAdder({ habit, onHabitAdded }: { habit: SuggestedHabit, onHabitAdded: () => void }) {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isAdded, setIsAdded] = useState(false);
+  const { toast } = useToast();
 
   const handleFinish = () => {
     setIsFormOpen(false);
+    setIsAdded(true);
+    toast({
+        title: 'Habit Added!',
+        description: `"${habit.habitName}" has been added to your habits.`
+    })
     onHabitAdded();
   }
   
@@ -35,9 +43,13 @@ export function SuggestedHabitAdder({ habit, onHabitAdded }: { habit: SuggestedH
 
   return (
     <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <Button onClick={() => setIsFormOpen(true)} size="sm">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add to My Habits
+        <Button onClick={() => setIsFormOpen(true)} size="sm" disabled={isAdded}>
+            {isAdded ? (
+                <CheckCircle className="mr-2 h-4 w-4" />
+            ) : (
+                <PlusCircle className="mr-2 h-4 w-4" />
+            )}
+            {isAdded ? 'Added' : 'Add to My Habits'}
         </Button>
       <DialogContent>
           <DialogHeader>

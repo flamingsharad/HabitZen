@@ -68,11 +68,8 @@ export function GoalRoadmapGenerator() {
   };
   
   const onHabitAdded = () => {
-    toast({
-        title: 'Habit Added!',
-        description: 'The new habit has been added to your dashboard.',
-    })
-    router.push('/');
+    // This function is called when a habit is added.
+    // We don't need to do anything here anymore, as the toast is handled in the adder.
   }
 
   return (

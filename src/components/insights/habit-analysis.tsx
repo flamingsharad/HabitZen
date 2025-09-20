@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -15,6 +15,41 @@ import { Loader2, Zap, Trophy, TrendingDown, Lightbulb, BrainCircuit } from "luc
 import { analyzeHabitDataForInsights, AnalyzeHabitDataOutput } from "@/ai/flows/analyze-habit-data-for-insights";
 import { getAllMoods, getHabits } from "@/lib/data";
 import { useAuth } from "@/hooks/use-auth";
+
+const loadingMessages = [
+    "Crunching the numbers...",
+    "Analyzing your patterns...",
+    "Consulting the digital oracle...",
+    "Untangling your habit spaghetti...",
+    "Brewing fresh insights...",
+    "Finding the needle in the haystack...",
+    "Assembling expert advice...",
+    "Decoding your patterns...",
+];
+
+function AnalysisLoader() {
+    const [message, setMessage] = useState(loadingMessages[0]);
+
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            setMessage(prevMessage => {
+                const currentIndex = loadingMessages.indexOf(prevMessage);
+                const nextIndex = (currentIndex + 1) % loadingMessages.length;
+                return loadingMessages[nextIndex];
+            });
+        }, 2000);
+
+        return () => clearInterval(intervalId);
+    }, []);
+    
+    return (
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+            <p className="text-muted-foreground font-medium">{message}</p>
+        </div>
+    )
+}
+
 
 export function HabitAnalysis() {
   const [loading, setLoading] = useState(false);
@@ -54,7 +89,9 @@ export function HabitAnalysis() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {analysis ? (
+        {loading ? (
+            <AnalysisLoader />
+        ) : analysis ? (
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

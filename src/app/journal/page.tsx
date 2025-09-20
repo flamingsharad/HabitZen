@@ -9,6 +9,7 @@ import { getJournalEntry, saveJournalEntry } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save } from 'lucide-react';
 import { format } from 'date-fns';
+import { PageLoader } from '@/components/layout/page-loader';
 
 export default function JournalPage() {
     const [reflection, setReflection] = useState('');
@@ -73,9 +74,7 @@ export default function JournalPage() {
                 </CardHeader>
                 <CardContent>
                     {loading ? (
-                        <div className="flex justify-center items-center h-64">
-                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                        </div>
+                        <PageLoader />
                     ) : (
                         <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
                             <div className="space-y-2">

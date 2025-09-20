@@ -1,15 +1,63 @@
 
 
 import { User, Habit, HabitLog, HabitStatus, HabitCategory, Reminder, MoodLog, Mood, JournalEntry } from './types';
-import { format, subDays, startOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { format, subDays, startOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isSameDay, parseISO } from 'date-fns';
 import { auth, db } from './firebase';
-import { collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, Timestamp, runTransaction } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, Timestamp, runTransaction, writeBatch, arrayUnion } from 'firebase/firestore';
+import { encrypt, decrypt } from './encryption';
 
 export const getUserId = () => {
     const user = auth.currentUser;
-    if (!user) throw new Error("User not authenticated");
+    if (!user) throw new Error("User not authenticated. This function should only be called from the client-side.");
     return user.uid;
 }
+
+const checkAndResetStreaks = async (): Promise<void> => {
+    const uid = getUserId();
+    const userRef = doc(db, 'users', uid);
+    const userSnap = await getDoc(userRef);
+    const userData = userSnap.data() as User | undefined;
+    const today = startOfDay(new Date());
+    const todayStr = format(today, 'yyyy-MM-dd');
+
+    // Only run once per day
+    if (userData?.lastStreakCheck === todayStr) {
+        return;
+    }
+
+    const habitsCol = collection(db, 'users', uid, 'habits');
+    const habitsSnapshot = await getDocs(habitsCol);
+    const batch = writeBatch(db);
+
+    const yesterday = subDays(today, 1);
+    const yesterdayStr = format(yesterday, 'yyyy-MM-dd');
+
+    habitsSnapshot.forEach(docSnap => {
+        const habit = { id: docSnap.id, ...docSnap.data() } as Habit;
+
+        if (habit.frequency === 'daily' && habit.streak > 0) {
+            const todayLog = habit.logs.find(log => log.date === todayStr);
+            const yesterdayLog = habit.logs.find(log => log.date === yesterdayStr);
+
+            // If user has already completed the habit today, don't reset the streak yet.
+            if (todayLog && todayLog.status === 'completed') {
+                return;
+            }
+            
+            // If there's no completed log for yesterday, the streak is broken.
+            if (!yesterdayLog || yesterdayLog.status !== 'completed') {
+                const habitRef = doc(db, 'users', uid, 'habits', habit.id);
+                batch.update(habitRef, { streak: 0 });
+            }
+        }
+    });
+
+    await batch.commit();
+
+    // Update the last check date on the user document
+    await updateDoc(userRef, { lastStreakCheck: todayStr });
+};
+
 
 const updateHabitProgress = (habit: Habit): Habit => {
     if (habit.frequency === 'daily') {
@@ -53,6 +101,8 @@ export const getUser = async (): Promise<User | null> => {
 };
 
 export const getHabits = async (): Promise<Habit[]> => {
+    await checkAndResetStreaks(); // Check streaks before getting habits
+
     const uid = getUserId();
     const habitsCol = collection(db, 'users', uid, 'habits');
     const habitsSnapshot = await getDocs(habitsCol);
@@ -95,10 +145,18 @@ export const getHabitById = async (id: string): Promise<Habit | undefined> => {
   return undefined;
 }
 
-export const updateUser = async (updatedData: Partial<User>) => {
+export const updateUser = async (updatedData: Partial<User>, uid?: string) => {
+    const userId = uid || getUserId();
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, updatedData);
+};
+
+export const updateUserFCMToken = async (token: string) => {
     const uid = getUserId();
     const userRef = doc(db, 'users', uid);
-    await updateDoc(userRef, updatedData);
+    await updateDoc(userRef, {
+        fcmTokens: arrayUnion(token)
+    });
 };
 
 export const addHabit = async (habitData: { name: string; category: HabitCategory; frequency: 'daily' | 'weekly' | 'monthly'; reminder?: Reminder; }) => {
@@ -145,14 +203,17 @@ export const updateHabitStatus = async (id: string, status: HabitStatus): Promis
     }
 
     const habit = { id: habitSnap.id, ...habitSnap.data() } as Habit;
-    const todayStr = format(startOfDay(new Date()), 'yyyy-MM-dd');
-    const yesterdayStr = format(subDays(new Date(), 1), 'yyyy-MM-dd');
+    const today = startOfDay(new Date());
+    const todayStr = format(today, 'yyyy-MM-dd');
+    const yesterday = subDays(today, 1);
+    const yesterdayStr = format(yesterday, 'yyyy-MM-dd');
 
     const oldLog = habit.logs.find((l) => l.date === todayStr);
     const wasCompletedToday = oldLog?.status === 'completed';
-    const wasCompletedYesterday = habit.logs.some(
-      (l) => l.date === yesterdayStr && l.status === 'completed'
-    );
+    
+    // Check if the habit was completed yesterday
+    const yesterdayLog = habit.logs.find(l => l.date === yesterdayStr);
+    const wasCompletedYesterday = yesterdayLog?.status === 'completed';
 
     const newLogs = habit.logs.filter((log) => log.date !== todayStr);
     if (status !== 'pending') {
@@ -164,9 +225,12 @@ export const updateHabitStatus = async (id: string, status: HabitStatus): Promis
 
     if (habit.frequency === 'daily') {
       if (isNowCompleted && !wasCompletedToday) {
+        // If completed yesterday, increment streak. Otherwise, start a new streak.
         newStreak = wasCompletedYesterday ? habit.streak + 1 : 1;
       } else if (!isNowCompleted && wasCompletedToday) {
-        newStreak = wasCompletedYesterday ? habit.streak - 1 : 0;
+        // If it was completed today and we are un-completing it
+        // The streak should be what it was at the start of the day.
+        newStreak = wasCompletedYesterday ? habit.streak -1 : 0;
       }
     }
     
@@ -218,16 +282,35 @@ export const getJournalEntry = async (date: Date): Promise<JournalEntry | null> 
     const journalRef = doc(db, 'users', uid, 'journal_entries', dateStr);
     const journalSnap = await getDoc(journalRef);
     if(journalSnap.exists()) {
-        return { id: journalSnap.id, ...journalSnap.data() } as JournalEntry;
+        const entry = { id: journalSnap.id, ...journalSnap.data() } as JournalEntry;
+        entry.reflection = decrypt(entry.reflection);
+        entry.gratitude = decrypt(entry.gratitude);
+        return entry;
     }
     return null;
+};
+
+export const getAllJournalEntries = async (): Promise<JournalEntry[]> => {
+    const uid = getUserId();
+    const journalCol = collection(db, 'users', uid, 'journal_entries');
+    const journalSnapshot = await getDocs(journalCol);
+    return journalSnapshot.docs.map(doc => {
+        const entry = { id: doc.id, ...doc.data() } as JournalEntry;
+        entry.reflection = decrypt(entry.reflection);
+        entry.gratitude = decrypt(entry.gratitude);
+        return entry;
+    });
 };
 
 export const saveJournalEntry = async (date: Date, reflection: string, gratitude: string): Promise<void> => {
     const uid = getUserId();
     const dateStr = format(startOfDay(date), 'yyyy-MM-dd');
     const journalRef = doc(db, 'users', uid, 'journal_entries', dateStr);
-    await setDoc(journalRef, { date: dateStr, reflection, gratitude });
+    
+    const encryptedReflection = encrypt(reflection);
+    const encryptedGratitude = encrypt(gratitude);
+
+    await setDoc(journalRef, { date: dateStr, reflection: encryptedReflection, gratitude: encryptedGratitude });
 };
 
 export const createFirestoreUser = async (firebaseUser: any, name?: string) => {
@@ -240,6 +323,7 @@ export const createFirestoreUser = async (firebaseUser: any, name?: string) => {
           avatarUrl: firebaseUser.photoURL || undefined,
           goals: 'Set your goals!',
           dailyRoutine: 'morning',
+          lastStreakCheck: '',
       };
       await setDoc(userRef, newUser);
     }
