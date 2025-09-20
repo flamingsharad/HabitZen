@@ -5,3 +5,24 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+# schedule for running a certain endpoint on a recurring basis.
+# a service account with "pubsub.publisher", "run.invoker", and "apphosting.scheduledJobRunner" is required.
+# the service account used is the default compute service account
+# to find it run `gcloud projects describe <project-id> --format='value(projectNumber)'` and it will be `service-<project-number>@gcp-sa-apphosting.iam.gserviceaccount.com`
+# to add roles run `gcloud projects add-iam-policy-binding <project-id> --member=serviceAccount:service-<project-number>@gcp-sa-apphosting.iam.gserviceaccount.com --role=<role>`
+# for more info on roles see https://cloud.google.com/iam/docs/understanding-roles
+scheduler:
+  - id: send-reminders-every-minute
+    # run the job every minute
+    schedule: '* * * * *'
+    # UTC is the default timezone
+    httpTarget:
+      # the path to the endpoint to run
+      path: /api/send-reminders
+      # the cron secret must be present on the request's authorization header as a bearer token
+    # to create a secret run `gcloud secrets create <secret-name> --replication-policy=automatic`
+    # and then `printf "<secret-value>" | gcloud secrets versions add <secret-name> --data-file=-`
+    # you will need to add the secret to your .env file as CRON_SECRET=<secret-value>
+    # the service account requires the "secretmanager.secretAccessor" role
+    # for more info see https://cloud.google.com/app-hosting/docs/reference/apphosting-yaml#cron_secrets
+    cronSecret: projects/studio-8569249950-7e375/secrets/CRON_SECRET
